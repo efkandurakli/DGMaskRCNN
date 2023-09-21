@@ -16,33 +16,32 @@ def get_transform(is_train, data_augmentation="hflip", backend="pil", use_v2=Fal
 
 class RoofDetectionDataModule(pl.LightningDataModule):
     def __init__(self, data_path = "datasets/DFC2023/track1",
+                 ann_folder = "annotations/1classes",
                  data_augmentation="hflip", backend="pil",
                  use_v2=False, batch_size = 2, num_workers = 4):
         
         super().__init__()
 
         self.data_path = data_path
+        self.ann_folder = ann_folder
         self.data_augmentation = data_augmentation
         self.backend = backend
         self.use_v2 = use_v2
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-        
-    def setup(self, stage: str):
-        if stage == "fit":
-            self.train_dataset = get_dataset(self.data_path, 
-                                    transforms=get_transform(True, data_augmentation=self.data_augmentation,backend=self.backend, use_v2=self.use_v2), 
-                                    ann_folder="annotations/1classes", image_set='train')
 
-            self.val_dataset = get_dataset(self.data_path, 
-                                    transforms=get_transform(False, data_augmentation=self.data_augmentation,backend=self.backend, use_v2=self.use_v2), 
-                                    ann_folder="annotations/1classes", image_set='val')
+        self.train_dataset, self.num_classes, self.num_domains = get_dataset(self.data_path, 
+                                transforms=get_transform(True, data_augmentation=self.data_augmentation,backend=self.backend, use_v2=self.use_v2), 
+                                ann_folder=self.ann_folder, image_set='train')
 
-        if stage == "test":
-            self.test_dataset = get_dataset(self.data_path, 
+        self.val_dataset, _, _ = get_dataset(self.data_path, 
                                 transforms=get_transform(False, data_augmentation=self.data_augmentation,backend=self.backend, use_v2=self.use_v2), 
-                                ann_folder="annotations/1classes", image_set='test')
+                                ann_folder=self.ann_folder, image_set='val')
+
+        self.test_dataset, _, _ = get_dataset(self.data_path, 
+                            transforms=get_transform(False, data_augmentation=self.data_augmentation,backend=self.backend, use_v2=self.use_v2), 
+                            ann_folder=self.ann_folder, image_set='test')
 
 
     def train_dataloader(self):

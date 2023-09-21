@@ -240,8 +240,9 @@ def get_dataset(
     ann_file_path = os.path.join(root, ann_folder, image_set+".json")
 
     dataset = RoofDetection(img_folder, ann_file_path, transforms=transforms)
+    num_classes, num_domains = dataset.num_classes, dataset.num_domains
 
     if "train" in image_set:
         dataset = _coco_remove_images_without_annotations(dataset)
 
-    return dataset
+    return dataset, num_classes, num_domains
