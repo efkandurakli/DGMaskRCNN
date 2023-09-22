@@ -1,12 +1,13 @@
 import torch
 import torchvision
 import lightning as L
-from datamodule import RoofDetectionDataModule
+from torch.utils.data import DataLoader 
+from torchvision.models.detection import fasterrcnn_resnet50_fpn
+
 from coco_eval import CocoEvaluator
 from dataset import get_coco_api_from_dataset
 from dataset import get_dataset
 import presets
-from torch.utils.data import DataLoader, Subset
 import utils
 
 def get_transform(is_train, data_augmentation="hflip", backend="pil", use_v2=False):
@@ -58,7 +59,7 @@ class FasterRCNN(L.LightningModule):
         
 
         self.save_hyperparameters()
-        self.detector = torchvision.models.detection.fasterrcnn_resnet50_fpn(num_classes=self.num_classes+1, trainable_backbone_layers=3, **kwargs)
+        self.detector = fasterrcnn_resnet50_fpn(num_classes=self.num_classes+1, **kwargs)
 
         self.automatic_optimization = False
 
@@ -66,6 +67,7 @@ class FasterRCNN(L.LightningModule):
         return self.detector(images)
 
     def training_step(self, batch, batch_idx):
+        print(self.current_epoch)
         images, targets = batch
         images = list(image for image in images)
         targets = [{k: v if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
@@ -108,6 +110,7 @@ class FasterRCNN(L.LightningModule):
         self.coco_evaluator.synchronize_between_processes()
         self.coco_evaluator.accumulate()
         self.coco_evaluator.summarize()
+        map50 = self.coco_evaluator.coco_eval['bbox'].stats[1]
 
     def on_test_start(self):
         pass
@@ -129,18 +132,4 @@ class FasterRCNN(L.LightningModule):
         val_sampler = torch.utils.data.SequentialSampler(self.val_dataset)
         return DataLoader(self.val_dataset, batch_size=1, sampler=val_sampler, 
                           num_workers=self.hparams.num_workers, collate_fn=utils.collate_fn)
-
-
-# datamodel = RoofDetectionDataModule(ann_folder="annotations/2classes")
-# num_classes, num_domains = datamodel.num_classes, datamodel.num_domains
-model = FasterRCNN(ann_folder="annotations/2classes",)
-
-trainer = L.Trainer(
-    accelerator="auto",
-    devices=1,
-    max_epochs=5,
-    enable_progress_bar=True,
-    num_sanity_val_steps = 0
-)
-trainer.fit(model)
 
