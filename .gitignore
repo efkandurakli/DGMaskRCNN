@@ -165,3 +165,4 @@ datasets/*
 # logs
 logs/*
 lightning_logs/*
+checkpoints/*
