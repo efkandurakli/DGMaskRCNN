@@ -33,8 +33,6 @@ def main(args):
 
     trainer = Trainer(max_epochs=args.max_epochs, callbacks=[early_stop_callback, checkpoint_callback], num_sanity_val_steps=0)
 
-    mask_rcnn.load_from_checkpoint(checkpoint_path=os.path.join(args.checkpoint_dir, args.checkpoint_file_name+'.ckpt'))
-
     trainer.fit(mask_rcnn)
 
 def get_args_parser(add_help=True):
