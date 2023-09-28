@@ -119,14 +119,6 @@ class MaskRCNN(L.LightningModule):
         res = {target["image_id"].item(): output for target, output in zip(targets, outputs)}
         self.coco_evaluator.update(res)
 
-    def on_train_epoch_end(self):
-        if self.current_epoch == 0:
-            optimizer = self.optimizers()
-            warmup_factor = 1.0 / 1000
-            warmup_iters = min(1000, len(self.train_dataloader()) - 1)
-            lr_scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=warmup_factor, total_iters=warmup_iters)
-            lr_scheduler.step()
-
     def on_validation_epoch_start(self):
         coco = get_coco_api_from_dataset(self.val_dataset)
         iou_types = _get_iou_types(self.detector)
