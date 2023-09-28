@@ -4,7 +4,7 @@ import lightning as L
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
 from torch.utils.data import DataLoader 
-from torchvision.models.detection import fasterrcnn_resnet50_fpn
+from torchvision.models.detection import maskrcnn_resnet50_fpn
 
 from coco_eval import CocoEvaluator
 from dataset import get_coco_api_from_dataset
@@ -35,7 +35,7 @@ def _get_iou_types(model):
 
 
 
-class FasterRCNN(L.LightningModule):
+class MaskRCNN(L.LightningModule):
     def __init__(
             self,
             data_path = "/home/duraklefkan/workspace/Datasets/DFC2023/track1",
@@ -70,25 +70,24 @@ class FasterRCNN(L.LightningModule):
 
         self.save_hyperparameters()
 
-    def setup(self, stage: str):
-        if stage == 'fit':
-            self.train_dataset, self.num_classes, self.num_domains = get_dataset(self.data_path, 
-                                    transforms=get_transform(True, data_augmentation=self.data_augmentation,
-                                                            backend=self.backend), 
-                                    ann_folder=self.ann_folder, image_set="train")
-            
-            self.val_dataset, _, _ = get_dataset(self.data_path, 
-                                    transforms=get_transform(False, data_augmentation=self.data_augmentation,
-                                                            backend=self.backend), 
-                                    ann_folder=self.ann_folder, image_set="val")
-            
-            self.detector = fasterrcnn_resnet50_fpn(num_classes=self.num_classes+1, **self.kwargs)
-                  
-        if stage == 'test':
-            self.test_dataset, _, _ = get_dataset(self.data_path, 
-                                    transforms=get_transform(False, data_augmentation=self.data_augmentation,
-                                                            backend=self.backend), 
-                                    ann_folder=self.ann_folder, image_set="test")
+        self.train_dataset, self.num_classes, self.num_domains = get_dataset(self.data_path, 
+                                transforms=get_transform(True, data_augmentation=self.data_augmentation,
+                                                        backend=self.backend), 
+                                ann_folder=self.ann_folder, image_set="train")
+        
+        self.val_dataset, _, _ = get_dataset(self.data_path, 
+                                transforms=get_transform(False, data_augmentation=self.data_augmentation,
+                                                        backend=self.backend), 
+                                ann_folder=self.ann_folder, image_set="val")
+                        
+
+        self.test_dataset, self.num_classes, self.num_domains = get_dataset(self.data_path, 
+                                transforms=get_transform(False, data_augmentation=self.data_augmentation,
+                                                        backend=self.backend), 
+                                ann_folder=self.ann_folder, image_set="test")
+        
+        self.detector = maskrcnn_resnet50_fpn(num_classes=self.num_classes+1, **self.kwargs)
+
 
     def forward(self, images):
         return self.detector(images)
@@ -108,7 +107,7 @@ class FasterRCNN(L.LightningModule):
         images, targets = batch
         images = list(img for img in images)
         outputs = self(images)
-        outputs = [{k: v for k, v in t.items()} for t in outputs]
+        outputs = [{k: v.cpu() for k, v in t.items()} for t in outputs]
         res = {target["image_id"].item(): output for target, output in zip(targets, outputs)}
         self.coco_evaluator.update(res)
 
@@ -116,7 +115,7 @@ class FasterRCNN(L.LightningModule):
         images, targets = batch
         images = list(img for img in images)
         outputs = self(images)
-        outputs = [{k: v for k, v in t.items()} for t in outputs]
+        outputs = [{k: v.cpu() for k, v in t.items()} for t in outputs]
         res = {target["image_id"].item(): output for target, output in zip(targets, outputs)}
         self.coco_evaluator.update(res)
 
@@ -137,7 +136,7 @@ class FasterRCNN(L.LightningModule):
         self.coco_evaluator.synchronize_between_processes()
         self.coco_evaluator.accumulate()
         self.coco_evaluator.summarize()
-        map50 = self.coco_evaluator.coco_eval['bbox'].stats[1]
+        map50 = self.coco_evaluator.coco_eval['segm'].stats[1]
         self.log("map@50", map50)
 
     def on_test_start(self):
@@ -175,4 +174,3 @@ class FasterRCNN(L.LightningModule):
         val_sampler = torch.utils.data.SequentialSampler(self.test_dataset)
         return DataLoader(self.test_dataset, batch_size=1, sampler=val_sampler, 
                           num_workers=self.num_workers, collate_fn=utils.collate_fn)
-
