@@ -1,4 +1,4 @@
-from maskrcnn import MaskRCNN
+from maskrcnn import DGMaskRCNN
 import lightning as L
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
@@ -10,7 +10,7 @@ def main(args):
     if args.data_augmentation in ["multiscale", "lsj"]:
         kwargs["_skip_resize"] = True
 
-    mask_rcnn = MaskRCNN(
+    mask_rcnn = DGMaskRCNN(
         data_path=args.data_path,
         ann_folder=args.ann_folder,
         data_augmentation=args.data_augmentation,
@@ -23,6 +23,7 @@ def main(args):
         opt=args.opt,
         lr_steps=args.lr_steps,
         lr_gamma=args.lr_gamma,
+        image_dg=args.image_dg,
         **kwargs
     )
 
@@ -90,6 +91,8 @@ def get_args_parser(add_help=True):
         "--data-augmentation", default="hflip", type=str, help="data augmentation policy (default: hflip)"
     )
     parser.add_argument("--backend", default="PIL", type=str.lower, help="PIL or tensor - case insensitive")
+
+    parser.add_argument('--image-dg', action="store_true", help="whether the image level domain generalization is included during training")
 
     return parser
 
