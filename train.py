@@ -24,6 +24,7 @@ def main(args):
         lr_steps=args.lr_steps,
         lr_gamma=args.lr_gamma,
         image_dg=args.image_dg,
+        ins_dg=args.ins_dg,
         **kwargs
     )
 
@@ -93,6 +94,7 @@ def get_args_parser(add_help=True):
     parser.add_argument("--backend", default="PIL", type=str.lower, help="PIL or tensor - case insensitive")
 
     parser.add_argument('--image-dg', action="store_true", help="whether the image level domain generalization is included during training")
+    parser.add_argument('--ins-dg', action="store_true", help="whether the instance level domain generalization is included during training")
 
     return parser
 
