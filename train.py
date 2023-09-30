@@ -1,4 +1,4 @@
-from maskrcnn import DGMaskRCNN
+from dg_maskrcnn import DGMaskRCNN
 import lightning as L
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint

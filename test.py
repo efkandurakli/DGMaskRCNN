@@ -1,10 +1,10 @@
 import os
-from maskrcnn import MaskRCNN
+from dg_maskrcnn import DGMaskRCNN
 from lightning.pytorch import Trainer
 
 def main(args):
 
-    mask_rcnn = MaskRCNN.load_from_checkpoint(checkpoint_path=os.path.join(args.checkpoint_dir, args.checkpoint_file_name+'.ckpt'))
+    mask_rcnn = DGMaskRCNN.load_from_checkpoint(checkpoint_path=os.path.join(args.checkpoint_dir, args.checkpoint_file_name+'.ckpt'))
 
     trainer = Trainer()
 
