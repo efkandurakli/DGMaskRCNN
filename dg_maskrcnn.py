@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision
 import lightning as L
 from torch.utils.data import DataLoader 
 from gradient_scalar_layer import GradientScalarLayer
@@ -24,17 +23,6 @@ def get_transform(is_train, data_augmentation="hflip", backend="pil", use_v2=Fal
         )
     else:
         return presets.DetectionPresetEval(backend=backend, use_v2=use_v2)
-
-def _get_iou_types(model):
-    model_without_ddp = model
-    if isinstance(model, torch.nn.parallel.DistributedDataParallel):
-        model_without_ddp = model.module
-    iou_types = ["bbox"]
-    if isinstance(model_without_ddp, torchvision.models.detection.MaskRCNN):
-        iou_types.append("segm")
-    if isinstance(model_without_ddp, torchvision.models.detection.KeypointRCNN):
-        iou_types.append("keypoints")
-    return iou_types
 
 class DGImgHead(nn.Module):
     def __init__(self, in_channels, num_domains):
@@ -190,6 +178,7 @@ class DGMaskRCNN(L.LightningModule):
        self.img_features = output
 
     def store_ins_features(self, module, input, output):
+            self.box_domains = input[1]
             self.box_features = output
       
     def forward(self, images):
@@ -209,14 +198,9 @@ class DGMaskRCNN(L.LightningModule):
             loss_dict.update({"img_loss": img_loss})
         
         if self.ins_dg:
-            batch_per_image = self.box_features.shape[0] // len(targets)
-            ins_domain_labels = []
-            for target in targets:
-                ins_domain_labels.append(target["domain"].repeat(batch_per_image))
-            ins_domain_labels = torch.cat(ins_domain_labels, dim=0)
             ins_grl_fea = self.grl_ins(self.box_features)
             ins_domain_logits = self.inshead(ins_grl_fea)
-            ins_loss = F.cross_entropy(ins_domain_logits, ins_domain_labels)
+            ins_loss = F.cross_entropy(ins_domain_logits, self.box_domains)
             loss_dict.update({"ins_loss": ins_loss})
 
         losses = sum(loss for loss in loss_dict.values())
@@ -243,8 +227,7 @@ class DGMaskRCNN(L.LightningModule):
 
     def on_validation_epoch_start(self):
         coco = get_coco_api_from_dataset(self.val_dataset)
-        iou_types = _get_iou_types(self.detector)
-        self.coco_evaluator = CocoEvaluator(coco, iou_types)
+        self.coco_evaluator = CocoEvaluator(coco, ["bbox", "segm"])
 
     def on_validation_epoch_end(self):
         self.coco_evaluator.synchronize_between_processes()
@@ -255,8 +238,7 @@ class DGMaskRCNN(L.LightningModule):
 
     def on_test_start(self):
         coco = get_coco_api_from_dataset(self.test_dataset)
-        iou_types = _get_iou_types(self.detector)
-        self.coco_evaluator = CocoEvaluator(coco, iou_types)
+        self.coco_evaluator = CocoEvaluator(coco, ["bbox", "segm"])
 
     def on_test_end(self):
         self.coco_evaluator.synchronize_between_processes()

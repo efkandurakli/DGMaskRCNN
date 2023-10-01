@@ -1,11 +1,27 @@
+import torch.nn.functional as F
+from torch import nn
 from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 from torchvision.models.detection.anchor_utils import AnchorGenerator
 from torchvision.models.detection.rpn import RegionProposalNetwork, RPNHead
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.models.detection.faster_rcnn import TwoMLPHead, FastRCNNPredictor, _default_anchorgen
 from torchvision.ops import MultiScaleRoIAlign
-
 from roi_heads import RoIHeads
+
+class TwoMLPHead(nn.Module):
+    def __init__(self, in_channels, representation_size):
+        super().__init__()
+
+        self.fc6 = nn.Linear(in_channels, representation_size)
+        self.fc7 = nn.Linear(representation_size, representation_size)
+
+    def forward(self, x, box_domains):
+        x = x.flatten(start_dim=1)
+
+        x = F.relu(self.fc6(x))
+        x = F.relu(self.fc7(x))
+
+        return x
 
 class FasterRCNN(GeneralizedRCNN):
     def __init__(

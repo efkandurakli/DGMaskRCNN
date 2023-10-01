@@ -1,3 +1,4 @@
+import torch.nn as nn
 from typing import Any, Optional
 from torchvision.ops import MultiScaleRoIAlign
 from torchvision.models.detection.mask_rcnn import MaskRCNNHeads, MaskRCNNPredictor
