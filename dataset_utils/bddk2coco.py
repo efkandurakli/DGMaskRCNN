@@ -18,7 +18,7 @@ def bddk2coco(input_path, out_path):
 
     data = json.load(json_file)
 
-    json_file.close
+    json_file.close()
 
     frames = data["frames"]
 
