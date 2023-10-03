@@ -3,6 +3,7 @@ import lightning as L
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
 from lightning.pytorch import Trainer, seed_everything
+from dgfrcnn import DGFasterRCNN
 
 def main(args):
 
@@ -10,7 +11,7 @@ def main(args):
     if args.data_augmentation in ["multiscale", "lsj"]:
         kwargs["_skip_resize"] = True
 
-    mask_rcnn = DGMaskRCNN(
+    faster_rcnn = DGFasterRCNN(
         data_path=args.data_path,
         ann_folder=args.ann_folder,
         data_augmentation=args.data_augmentation,
@@ -35,7 +36,7 @@ def main(args):
 
     trainer = Trainer(max_epochs=args.max_epochs, callbacks=[early_stop_callback, checkpoint_callback], num_sanity_val_steps=0)
 
-    trainer.fit(mask_rcnn)
+    trainer.fit(faster_rcnn)
 
 def get_args_parser(add_help=True):
     import argparse
