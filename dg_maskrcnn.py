@@ -13,7 +13,8 @@ import utils
 
 
 DG_IMG_GRL_WEIGHT = 0.1
-DG_INS_GRL_WEIGHT = 0.1
+DG_BOX_GRL_WEIGHT = 0.1
+DG_MASK_GRL_WEIGHT = 0.1
 
 
 def get_transform(is_train, data_augmentation="hflip", backend="pil", use_v2=False):
@@ -105,7 +106,7 @@ class DGInsHead(nn.Module):
         x = self.classifier(x)
 
         return self.softmax(x)
-
+    
 class DGMaskRCNN(L.LightningModule):
     def __init__(
             self,
@@ -122,7 +123,8 @@ class DGMaskRCNN(L.LightningModule):
             lr_steps = [16, 22],
             lr_gamma = 0.1,
             image_dg = False,
-            ins_dg = False,
+            box_dg = False,
+            mask_dg = False,
             **kwargs
     ):
         super().__init__()
@@ -140,7 +142,8 @@ class DGMaskRCNN(L.LightningModule):
         self.lr_steps = lr_steps
         self.lr_gamma = lr_gamma
         self.image_dg = image_dg
-        self.ins_dg = ins_dg
+        self.box_dg = box_dg
+        self.mask_dg = mask_dg
         self.kwargs = kwargs
 
         self.save_hyperparameters()
@@ -169,17 +172,26 @@ class DGMaskRCNN(L.LightningModule):
             self.grl_img = GradientScalarLayer(-1.0*DG_IMG_GRL_WEIGHT)
             self.imghead = DGImgHead(256, self.num_domains)
         
-        if self.ins_dg:
+        if self.box_dg:
             self.detector.roi_heads.box_head.register_forward_hook(self.store_ins_features)
-            self.grl_ins = GradientScalarLayer(-1.0*DG_INS_GRL_WEIGHT)
-            self.inshead = DGInsHead(1024, self.num_domains)
+            self.grl_box = GradientScalarLayer(-1.0*DG_BOX_GRL_WEIGHT)
+            self.boxhead = DGInsHead(1024, self.num_domains)
+
+        if self.mask_dg:
+            self.detector.roi_heads.mask_head.register_forward_hook(self.store_mask_features)
+            self.grl_mask = GradientScalarLayer(-1.0*DG_MASK_GRL_WEIGHT)
+            self.maskhead = DGInsHead(256*14*14, self.num_domains)
     
     def store_img_features(self, module, input, output):
        self.img_features = output
 
-    def store_ins_features(self, module, input, output):
-            self.box_domains = input[1]
-            self.box_features = output
+    def store_box_features(self, module, input, output):
+        self.box_domains = input[1]
+        self.box_features = output
+
+    def store_mask_features(self, module, input, output):
+        self.mask_domains = input[1]
+        self.mak_features = output
       
     def forward(self, images):
         return self.detector(images)
@@ -197,11 +209,18 @@ class DGMaskRCNN(L.LightningModule):
             img_loss = F.cross_entropy(img_domain_logits, img_domain_labels)
             loss_dict.update({"img_loss": img_loss})
         
-        if self.ins_dg:
-            ins_grl_fea = self.grl_ins(self.box_features)
-            ins_domain_logits = self.inshead(ins_grl_fea)
-            ins_loss = F.cross_entropy(ins_domain_logits, self.box_domains)
-            loss_dict.update({"ins_loss": ins_loss})
+        if self.box_dg:
+            box_grl_fea = self.grl_box(self.box_features)
+            box_domain_logits = self.boxhead(box_grl_fea)
+            box_dg_loss = F.cross_entropy(box_domain_logits, self.box_domains)
+            loss_dict.update({"box_dg_loss": box_dg_loss})
+
+        if self.mask_dg:
+            mask_fetures = self.mak_features.flatten(start_dim=1)
+            mask_grl_fea = self.grl_mask(mask_fetures)
+            mask_domain_logits = self.maskhead(mask_grl_fea)
+            mask_dg_loss = F.cross_entropy(mask_domain_logits, self.mask_domains)
+            loss_dict.update({"mask_dg_loss": mask_dg_loss})
 
         losses = sum(loss for loss in loss_dict.values())
         self.log("train_loss", losses)

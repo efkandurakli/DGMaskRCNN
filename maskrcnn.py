@@ -1,15 +1,25 @@
 import torch.nn as nn
 from typing import Any, Optional
 from torchvision.ops import MultiScaleRoIAlign
-from torchvision.models.detection.mask_rcnn import MaskRCNNHeads, MaskRCNNPredictor
+from torchvision.models.detection.mask_rcnn import MaskRCNNHeads, MaskRCNNPredictor, MaskRCNN_ResNet50_FPN_Weights
 from torchvision.models.resnet import resnet50, ResNet50_Weights
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor, _validate_trainable_layers
-from torchvision.models.detection.mask_rcnn import MaskRCNN_ResNet50_FPN_Weights
 from torchvision.models._utils import _ovewrite_value_param
 from torchvision.models.detection._utils import overwrite_eps
 import torchvision.ops.misc as misc_nn_ops
 
 from fasterrcnn import FasterRCNN
+
+
+class MaskRCNNHead(MaskRCNNHeads):
+    def __init__(self, out_channels):
+        super().__init__(out_channels, [256, 256, 256, 256], 1)
+
+
+    def forward(self, input, mask_domains):
+        for module in self:
+            input = module(input)
+        return input
 
 class MaskRCNN(FasterRCNN):
     def __init__(
@@ -68,9 +78,7 @@ class MaskRCNN(FasterRCNN):
             mask_roi_pool = MultiScaleRoIAlign(featmap_names=["0", "1", "2", "3"], output_size=14, sampling_ratio=2)
 
         if mask_head is None:
-            mask_layers = (256, 256, 256, 256)
-            mask_dilation = 1
-            mask_head = MaskRCNNHeads(out_channels, mask_layers, mask_dilation)
+            mask_head = MaskRCNNHead(out_channels)
 
         if mask_predictor is None:
             mask_predictor_in_channels = 256  # == mask_layers[-1]
