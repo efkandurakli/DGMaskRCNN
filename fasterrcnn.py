@@ -15,7 +15,7 @@ class TwoMLPHead(nn.Module):
         self.fc6 = nn.Linear(in_channels, representation_size)
         self.fc7 = nn.Linear(representation_size, representation_size)
 
-    def forward(self, x, box_domains):
+    def forward(self, x, box_domains, box_labels):
         x = x.flatten(start_dim=1)
 
         x = F.relu(self.fc6(x))

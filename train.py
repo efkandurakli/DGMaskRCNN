@@ -3,7 +3,6 @@ import lightning as L
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
 from lightning.pytorch import Trainer, seed_everything
-from dgfrcnn import DGFasterRCNN
 
 def main(args):
 
@@ -11,7 +10,7 @@ def main(args):
     if args.data_augmentation in ["multiscale", "lsj"]:
         kwargs["_skip_resize"] = True
 
-    faster_rcnn = DGFasterRCNN(
+    mask_rcnn = DGMaskRCNN(
         data_path=args.data_path,
         ann_folder=args.ann_folder,
         data_augmentation=args.data_augmentation,
@@ -25,7 +24,8 @@ def main(args):
         lr_steps=args.lr_steps,
         lr_gamma=args.lr_gamma,
         image_dg=args.image_dg,
-        ins_dg=args.ins_dg,
+        box_dg=args.box_dg,
+        mask_dg=args.mask_dg,
         **kwargs
     )
 
@@ -36,7 +36,7 @@ def main(args):
 
     trainer = Trainer(max_epochs=args.max_epochs, callbacks=[early_stop_callback, checkpoint_callback], num_sanity_val_steps=0)
 
-    trainer.fit(faster_rcnn)
+    trainer.fit(mask_rcnn)
 
 def get_args_parser(add_help=True):
     import argparse
@@ -95,7 +95,8 @@ def get_args_parser(add_help=True):
     parser.add_argument("--backend", default="PIL", type=str.lower, help="PIL or tensor - case insensitive")
 
     parser.add_argument('--image-dg', action="store_true", help="whether the image level domain generalization is included during training")
-    parser.add_argument('--ins-dg', action="store_true", help="whether the instance level domain generalization is included during training")
+    parser.add_argument('--box-dg', action="store_true", help="whether the box level domain generalization is included during training")
+    parser.add_argument('--mask-dg', action="store_true", help="whether the mask level domain generalization is included during training")
 
     return parser
 

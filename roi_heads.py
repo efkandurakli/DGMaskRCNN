@@ -85,7 +85,7 @@ class RoIHeads(RoIHeads):
                 matched_idxs = None
             
             box_features = self.box_roi_pool(features, proposals, image_shapes)
-            box_features = self.box_head(box_features, box_domains)
+            box_features = self.box_head(box_features, box_domains, labels)
             class_logits, box_regression = self.box_predictor(box_features)
 
             result: List[Dict[str, torch.Tensor]] = []
@@ -119,16 +119,22 @@ class RoIHeads(RoIHeads):
                     num_images = len(proposals)
                     mask_proposals = []
                     pos_matched_idxs = []
+                    mask_domains = []
                     for img_id in range(num_images):
                         pos = torch.where(labels[img_id] > 0)[0]
+                        mask_domain = targets[img_id]["domain"]
+                        mask_domain = mask_domain.repeat(proposals[img_id].shape[0])
+                        mask_domains.append(mask_domain[pos])
                         mask_proposals.append(proposals[img_id][pos])
                         pos_matched_idxs.append(matched_idxs[img_id][pos])
+                    
+                    mask_domains = torch.cat(mask_domains, dim=0)
                 else:
                     pos_matched_idxs = None
 
                 if self.mask_roi_pool is not None:
                     mask_features = self.mask_roi_pool(features, mask_proposals, image_shapes)
-                    mask_features = self.mask_head(mask_features)
+                    mask_features = self.mask_head(mask_features, mask_domains)
                     mask_logits = self.mask_predictor(mask_features)
                 else:
                     raise Exception("Expected mask_roi_pool to be not None")
