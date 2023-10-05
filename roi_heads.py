@@ -111,6 +111,7 @@ class RoIHeads(RoIHeads):
 
             if self.has_mask():
                 mask_proposals = [p["boxes"] for p in result]
+                mask_domains = []
                 if self.training:
                     if matched_idxs is None:
                         raise ValueError("if in training, matched_idxs should not be None")
@@ -119,7 +120,6 @@ class RoIHeads(RoIHeads):
                     num_images = len(proposals)
                     mask_proposals = []
                     pos_matched_idxs = []
-                    mask_domains = []
                     for img_id in range(num_images):
                         pos = torch.where(labels[img_id] > 0)[0]
                         mask_domain = targets[img_id]["domain"]
