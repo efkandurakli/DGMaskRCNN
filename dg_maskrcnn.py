@@ -191,7 +191,7 @@ class DGMaskRCNN(L.LightningModule):
 
     def store_mask_features(self, module, input, output):
         self.mask_domains = input[1]
-        self.mak_features = output
+        self.mask_features = output
       
     def forward(self, images):
         return self.detector(images)
@@ -216,8 +216,9 @@ class DGMaskRCNN(L.LightningModule):
             loss_dict.update({"box_dg_loss": box_dg_loss})
 
         if self.mask_dg:
-            mask_fetures = self.mak_features.flatten(start_dim=1)
-            mask_grl_fea = self.grl_mask(mask_fetures)
+            mask_grl_fea = self.grl_mask(self.mask_features)
+            mask_grl_fea = self.mask_features.flatten(start_dim=1)
+            mask_grl_fea = self.grl_mask(mask_grl_fea)
             mask_domain_logits = self.maskhead(mask_grl_fea)
             mask_dg_loss = F.cross_entropy(mask_domain_logits, self.mask_domains)
             loss_dict.update({"mask_dg_loss": mask_dg_loss})
