@@ -173,7 +173,7 @@ class DGMaskRCNN(L.LightningModule):
             self.imghead = DGImgHead(256, self.num_domains)
         
         if self.box_dg:
-            self.detector.roi_heads.box_head.register_forward_hook(self.store_ins_features)
+            self.detector.roi_heads.box_head.register_forward_hook(self.store_box_features)
             self.grl_box = GradientScalarLayer(-1.0*DG_BOX_GRL_WEIGHT)
             self.boxhead = DGInsHead(1024, self.num_domains)
 
@@ -266,7 +266,7 @@ class DGMaskRCNN(L.LightningModule):
         self.coco_evaluator.summarize()
 
     def configure_optimizers(self):
-        parameters = [p for p in self.detector.parameters() if p.requires_grad]
+        parameters = [p for p in self.parameters() if p.requires_grad]
         if self.opt.lower():
             optimizer = torch.optim.SGD(parameters, lr=self.lr, momentum=self.momentum, weight_decay=self.weight_decay)
         else:
