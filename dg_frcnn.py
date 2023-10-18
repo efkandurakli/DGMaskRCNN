@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
 from torch.utils.data import DataLoader 
-from gradient_scalar_layer import GradientScalarLayer
 from maskrcnn import maskrcnn_resnet50_fpn
 from coco_eval import CocoEvaluator
 from dataset import get_coco_api_from_dataset

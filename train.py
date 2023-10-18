@@ -34,7 +34,7 @@ def main(args):
     early_stop_callback= EarlyStopping(monitor='map@50', min_delta=0.00, patience=args.patience, verbose=False, mode='max')
     checkpoint_callback = ModelCheckpoint(monitor='map@50', dirpath=args.checkpoint_dir, filename=args.checkpoint_file_name, mode='max')
 
-    trainer = Trainer(max_epochs=args.max_epochs, callbacks=[early_stop_callback, checkpoint_callback], num_sanity_val_steps=0)
+    trainer = Trainer(max_epochs=args.max_epochs, callbacks=[early_stop_callback, checkpoint_callback], num_sanity_val_steps=0, log_every_n_steps=15)
 
     trainer.fit(mask_rcnn)
 
