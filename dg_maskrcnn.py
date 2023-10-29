@@ -37,6 +37,8 @@ class DGMaskRCNN(L.LightningModule):
             image_dg = False,
             box_dg = False,
             mask_dg = False,
+            cons_box = False,
+            cons_mask = False,
             **kwargs
     ):
         super().__init__()
@@ -56,6 +58,8 @@ class DGMaskRCNN(L.LightningModule):
         self.image_dg = image_dg
         self.box_dg = box_dg
         self.mask_dg = mask_dg
+        self.cons_box = cons_box
+        self.cons_mask = cons_mask
         self.kwargs = kwargs
 
         self.save_hyperparameters()
@@ -115,7 +119,7 @@ class DGMaskRCNN(L.LightningModule):
             img_domain_labels = torch.cat([target["domain"] for target in targets], dim=0)
             img_domain_logits = self.imghead(self.img_features["0"])
             img_loss = F.cross_entropy(img_domain_logits, img_domain_labels)
-            loss_dict.update({"img_loss": img_loss})
+            loss_dict.update({"img_dg_loss": img_loss})
         
         if self.box_dg:
             box_domain_logits = self.boxhead(self.box_features)
@@ -126,6 +130,14 @@ class DGMaskRCNN(L.LightningModule):
             mask_domain_logits = self.maskhead(self.mask_features)
             mask_dg_loss = F.cross_entropy(mask_domain_logits, self.mask_domains)
             loss_dict.update({"mask_dg_loss": mask_dg_loss})
+
+        if  self.image_dg and self.box_dg and self.cons_box:
+            cons_loss_box = F.mse_loss(box_domain_logits, img_domain_logits[0].repeat(box_domain_logits.shape[0],1))
+            loss_dict.update({"cons_loss_box": cons_loss_box})
+
+        if  self.image_dg and self.mask_dg and self.cons_mask:
+            cons_loss_mask = F.mse_loss(mask_domain_logits, img_domain_logits[0].repeat(mask_domain_logits.shape[0],1))
+            loss_dict.update({"cons_loss_mask": cons_loss_mask})
 
 
         losses = sum(loss for loss in loss_dict.values())

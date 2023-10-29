@@ -42,7 +42,7 @@ class DGImgHead(nn.Module):
         x=self.reLu(self.fc(x))
         x=self.classifier(x)
         
-        return x
+        return self.softmax(x)
 
 
 class DGBoxHead(nn.Module):
@@ -74,7 +74,7 @@ class DGBoxHead(nn.Module):
 
         x = self.classifier(x)
 
-        return x
+        return self.softmax(x)
     
 class DGMaskHead(nn.Module):
     def __init__(self, num_domains):
@@ -121,4 +121,4 @@ class DGMaskHead(nn.Module):
 
         x = self.classifier(x)
 
-        return x
+        return self.softmax(x)

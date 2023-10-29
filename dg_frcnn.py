@@ -211,9 +211,9 @@ class DGFasterCNN(L.LightningModule):
        self.img_features = output
 
     def store_ins_features(self, module, input, output):
-            self.box_domains = input[1]
-            self.box_labels = input[2]
-            self.box_features = output
+        self.box_domains = input[1]
+        self.box_labels = input[2]
+        self.box_features = output
       
     def forward(self, images):
         return self.detector(images)

@@ -26,6 +26,8 @@ def main(args):
         image_dg=args.image_dg,
         box_dg=args.box_dg,
         mask_dg=args.mask_dg,
+        cons_box=args.cons_box,
+        cons_mask=args.cons_mask,
         **kwargs
     )
 
@@ -97,6 +99,9 @@ def get_args_parser(add_help=True):
     parser.add_argument('--image-dg', action="store_true", help="whether the image level domain generalization is included during training")
     parser.add_argument('--box-dg', action="store_true", help="whether the box level domain generalization is included during training")
     parser.add_argument('--mask-dg', action="store_true", help="whether the mask level domain generalization is included during training")
+
+    parser.add_argument('--cons-box', action="store_true", help="whether the consistency regularization is included between image and box features")
+    parser.add_argument('--cons-mask', action="store_true", help="whether the consistency regularization is included between image and mask features")
 
     return parser
 
