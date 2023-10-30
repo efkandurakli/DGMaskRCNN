@@ -12,7 +12,7 @@ def cityscapes2coco(root_dir, out_dir):
         annotations = []
         image_id = 1
         ann_id = 1
-        for foldername, subfolders, filenames in os.walk(gtPath):
+        for foldername, _, filenames in os.walk(gtPath):
             for filename in filenames:
                 if filename.endswith("gtFine_polygons.json"):
 
@@ -29,7 +29,6 @@ def cityscapes2coco(root_dir, out_dir):
                     width = data["imgWidth"]
 
                     images.append({"id": image_id, "width": width, "height": height, "file_name": image_filename})
-                    image_id += 1
 
                     objects = data["objects"]
                     for obj in objects:
@@ -39,13 +38,14 @@ def cityscapes2coco(root_dir, out_dir):
                             coco_polygon = [[coord for point in polygon for coord in point]]
                             rles = mask_util.frPyObjects(coco_polygon, height, width)
                             rle = mask_util.merge(rles)
-                            rle['counts'] = str(rle['counts'], encoding='utf-8')
                             bbox = mask_util.toBbox(rle).tolist()
                             bbox = [int(b) for b in bbox]
+                            rle['counts'] = str(rle['counts'], encoding='utf-8')
                             area = float(mask_util.area(rle))
                             annotation = {"id": ann_id, "image_id": image_id, "category_id": classes.index(category)+1, "area": area, "bbox": bbox, "segmentation": rle, "iscrowd": 0}
                             annotations.append(annotation)
                             ann_id += 1
+                    image_id += 1
 
         categories = [{"id": i+1, "name": cls, "supercategory": cls} for i, cls in enumerate(classes)]
         dataset = {"images": images, "annotations": annotations, "categories": categories}
