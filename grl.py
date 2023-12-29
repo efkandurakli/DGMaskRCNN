@@ -1,31 +1,30 @@
 import torch
-import torch.nn as nn
-from typing import Any, Optional, Tuple
-from torch.autograd import Function
 
-class GradientReverseFunction(Function):
-    """
-    Credit: https://github.com/thuml/Transfer-Learning-Library
-    """
+
+class _GradientScalarLayer(torch.autograd.Function):
     @staticmethod
-    def forward(
-        ctx: Any, input: torch.Tensor, coeff: Optional[float] = 0.1
-    ) -> torch.Tensor:
-        ctx.coeff = coeff
-        output = input * 1.0
-        return output
+    def forward(ctx, input, weight):
+        ctx.weight = weight
+        return input.view_as(input)
 
     @staticmethod
-    def backward(ctx: Any, grad_output: torch.Tensor) -> Tuple[torch.Tensor, Any]:
-        return grad_output.neg() * ctx.coeff, None
+    def backward(ctx, grad_output):
+        grad_input = grad_output.clone()
+        return ctx.weight*grad_input, None
+
+gradient_scalar = _GradientScalarLayer.apply
 
 
-class GradientReverseLayer(nn.Module):
-    """
-    Credit: https://github.com/thuml/Transfer-Learning-Library
-    """
-    def __init__(self):
-        super(GradientReverseLayer, self).__init__()
+class GradientScalarLayer(torch.nn.Module):
+    def __init__(self, weight):
+        super(GradientScalarLayer, self).__init__()
+        self.weight = weight
 
-    def forward(self, *input):
-        return GradientReverseFunction.apply(*input)
+    def forward(self, input):
+        return gradient_scalar(input, self.weight)
+
+    def __repr__(self):
+        tmpstr = self.__class__.__name__ + "("
+        tmpstr += "weight=" + str(self.weight)
+        tmpstr += ")"
+        return tmpstr

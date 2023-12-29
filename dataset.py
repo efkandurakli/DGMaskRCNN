@@ -184,6 +184,23 @@ class RoofDetection(CocoDetection):
         if self._transforms is not None:
             img, target = self._transforms(img, target)
         return img, target
+    
+class DrivingDataset(CocoDetection):
+    def __init__(self, img_folder, ann_file, transforms, domain=0):
+        super().__init__(img_folder, ann_file)
+        self._transforms = transforms
+        self.num_classes = len(self.coco.getCatIds())
+        self.domain = domain
+
+    def __getitem__(self, idx):
+        img, target = super().__getitem__(idx)
+        image_id = self.ids[idx]
+        target = dict(image_id=image_id, annotations=target, domain=self.domain)
+        if self._transforms is not None:
+            img, target = self._transforms(img, target)
+        return img, target
+
+    
 
 def _coco_remove_images_without_annotations(dataset, cat_list=None):
     def _has_only_empty_bbox(anno):
@@ -246,3 +263,28 @@ def get_dataset(
         dataset = _coco_remove_images_without_annotations(dataset)
 
     return dataset, num_classes, num_domains
+
+def get_driving_dataset(
+        root, 
+        transforms=None, 
+        img_folder="leftImg8bit/train", 
+        ann_folder="annotations",
+        image_set="train",
+        domain=0):
+
+    t = [ConvertCocoPolysToMask()]
+
+    if transforms is not None:
+        t.append(transforms)
+    transforms = T.Compose(t)
+
+    img_folder = os.path.join(root, img_folder)
+    ann_file_path = os.path.join(root, ann_folder, image_set+".json")
+
+    dataset = DrivingDataset(img_folder, ann_file_path, transforms=transforms, domain=domain)
+    num_classes = dataset.num_classes
+
+    if "train" in image_set:
+        dataset = _coco_remove_images_without_annotations(dataset)
+
+    return dataset, num_classes

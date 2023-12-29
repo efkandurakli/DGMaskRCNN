@@ -4,6 +4,10 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
 from lightning.pytorch import Trainer, seed_everything
 
+import torch
+import random
+import numpy as np
+
 def main(args):
 
     kwargs = {"trainable_backbone_layers": args.trainable_backbone_layers}
@@ -31,7 +35,10 @@ def main(args):
         **kwargs
     )
 
-    seed_everything(25081992)
+    torch.manual_seed(42)
+    np.random.seed(42)
+    random.seed(42)
+    seed_everything(42)
 
     early_stop_callback= EarlyStopping(monitor='map@50', min_delta=0.00, patience=args.patience, verbose=False, mode='max')
     checkpoint_callback = ModelCheckpoint(monitor='map@50', dirpath=args.checkpoint_dir, filename=args.checkpoint_file_name, mode='max')

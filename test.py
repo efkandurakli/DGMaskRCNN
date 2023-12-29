@@ -1,5 +1,5 @@
 import os
-from dg_maskrcnn import DGMaskRCNN
+from dg_frcnn import DGMaskRCNN
 from lightning.pytorch import Trainer
 
 def main(args):
@@ -16,7 +16,7 @@ def get_args_parser(add_help=True):
     parser = argparse.ArgumentParser(description="PyTorch Detection Training", add_help=add_help)
     
     parser.add_argument("--checkpoint-dir", default="checkpoints", type=str, help="checkpoint directory")
-    parser.add_argument("--checkpoint-file-name", default="best_prop", type=str, help="the name of checkpoint file")
+    parser.add_argument("--checkpoint-file-name", default="best_prop-v1", type=str, help="the name of checkpoint file")
 
     return parser
 
