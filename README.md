@@ -65,7 +65,7 @@ datasets/DFC2023/track1/
 ```
 python train.py
 ```
-#### With image-, instance, and pixel-level domain alignment
+#### With image-, instance-, and pixel-level domain alignment
 ```
 python train.py --image-dg --box-dg --mask-dg --reg_weights 0.1 0.1 0.1
 ```
