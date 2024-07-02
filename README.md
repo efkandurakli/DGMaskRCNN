@@ -38,7 +38,7 @@ This repository contains the code for the paper titled "A Domain Generalized Mas
    
 2. Create a conda virtual environment and activate it
    ```
-   conda create --name dgmaskrcnn python=3.8
+   conda create --name dgmaskrcnn python=3.11
    conda activate dgmaskrcnn
    ```
    
