@@ -1,6 +1,9 @@
 # A Domain Generalized Mask R-CNN for Building Instance Segmentation
 This repository contains the code for the paper titled "A Domain Generalized Mask R-CNN for Building Instance Segmentation" accepted for IGARSS 2024.
 
+[📄 Paper (IGARSS 2024)](https://ieeexplore.ieee.org/abstract/document/10641188)\
+[📄 Poster Presentation (IGARSS 2024)](https://drive.google.com/file/d/1xeG49HhclhaT87rXaUNVXW9ZziiqjDZh/view?usp=sharing)
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [Requirements](#requirements)
